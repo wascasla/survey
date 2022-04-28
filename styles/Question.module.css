@@ -1,0 +1,18 @@
+.circle {
+  width: 2em;
+  height: 2em;
+  -moz-border-radius: 50%;
+  -webkit-border-radius: 50%;
+  border-radius: 50%;
+  border-color: black;
+  border-width: 1px;
+  border-style: solid;
+  border-color: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.row_margin_top {
+    margin-top: 1em;
+}

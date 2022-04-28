@@ -1,3 +1,7 @@
 .App {
     padding: 2em;
 }
+
+.row_margin_top {
+    margin-top: 1em;
+}
