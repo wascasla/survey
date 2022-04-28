@@ -7,6 +7,7 @@ import { getSurveyService } from "../services/services";
 import HeadSurvey from "../components/HeadSurvey";
 import Questions from "../components/Questions";
 import Answers from "../components/Answers";
+import { clearTimer, deleteTimer, getDeadTime } from "../utils/timer";
 
 const Survey = () => {
   const RefTimer = useRef(null);
@@ -26,37 +27,6 @@ const Survey = () => {
   useEffect(() => {
     getSurvey();
   }, []);
-
-  const getTimeRemaining = (e) => {
-    const total = Date.parse(e) - Date.parse(new Date());
-    const seconds = Math.floor((total / 1000) % 60);
-    return {
-      total,
-      seconds,
-    };
-  };
-
-  const startTimer = (e) => {
-    let { total, seconds } = getTimeRemaining(e);
-    if (total >= 0) {
-      setTimer(seconds > 9 ? seconds : "0" + seconds);
-    }
-  };
-
-  const clearTimer = (e) => {
-    setTimer("0" + survey?.questions[numberQuestion]?.lifetimeSeconds);
-    if (RefTimer.current) clearInterval(RefTimer.current);
-    const id = setInterval(() => {
-      startTimer(e);
-    }, 1000);
-    RefTimer.current = id;
-  };
-
-  const getDeadTime = (time) => {
-    let deadline = new Date();
-    deadline.setSeconds(deadline.getSeconds() + time);
-    return deadline;
-  };
 
   const beginSurvey = () => {
     setAnswers([]);
@@ -80,22 +50,24 @@ const Survey = () => {
     }
   };
 
-  const deleteTimer = (id) => {
-    clearTimeout(id);
-  };
-
   const manageNextQuestion = () => {
     if (numberQuestion !== "" && numberQuestion !== null) {
       if (survey) {
         if (numberQuestion + 1 > survey.questions.length) {
           setNumberQuestion("");
           clearTimer(
-            getDeadTime(survey?.questions[numberQuestion]?.lifetimeSeconds)
+            getDeadTime(survey?.questions[numberQuestion]?.lifetimeSeconds),
+            survey?.questions[numberQuestion]?.lifetimeSeconds,
+            RefTimer.current,
+            setTimer
           );
           setStartedSurvey(false);
         } else {
           clearTimer(
-            getDeadTime(survey?.questions[numberQuestion]?.lifetimeSeconds)
+            getDeadTime(survey?.questions[numberQuestion]?.lifetimeSeconds),
+            survey?.questions[numberQuestion]?.lifetimeSeconds,
+            RefTimer.current,
+            setTimer
           );
           const itemOfTimer = setTimeout(
             nextQuestion,
@@ -140,7 +112,6 @@ const Survey = () => {
             <Row justify="center" gutter={[16, 16]}>
               <Col xs={10} sm={10} md={10} lg={8} xl={10}>
                 <Button
-                  // disabled={startedSurvey}
                   onClick={submitSurvey}
                   type="primary"
                   style={{ marginLeft: 8 }}
