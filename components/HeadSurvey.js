@@ -26,6 +26,16 @@ const HeadSurvey = ({ survey, startedSurvey, beginSurvey }) => {
             Begin Survey
           </Button>
         </Col>
+        <Col xs={10} sm={10} md={10} lg={8} xl={10}>
+          <Button
+            disabled={startedSurvey}
+            onClick={beginSurvey}
+            type="primary"
+            style={{ marginLeft: 8 }}
+          >
+            Connect Wallet
+          </Button>
+        </Col>
       </Row>
     </>
   );
