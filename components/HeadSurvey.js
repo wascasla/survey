@@ -1,7 +1,7 @@
 import { Button, Col, Image, Row } from "antd";
 import React from "react";
 
-const HeadSurvey = ({ survey, startedSurvey, beginSurvey }) => {
+const HeadSurvey = ({ survey, startedSurvey, beginSurvey, connectWallet }) => {
   return (
     <>
       <Row justify="center" gutter={[16, 16]}>
@@ -28,8 +28,7 @@ const HeadSurvey = ({ survey, startedSurvey, beginSurvey }) => {
         </Col>
         <Col xs={10} sm={10} md={10} lg={8} xl={10}>
           <Button
-            disabled={startedSurvey}
-            onClick={beginSurvey}
+            onClick={connectWallet}
             type="primary"
             style={{ marginLeft: 8 }}
           >

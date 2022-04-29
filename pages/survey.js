@@ -1,13 +1,23 @@
 import React from "react";
 import { useState, useEffect, useRef } from "react";
 import "antd/dist/antd.css";
-import { Button, DatePicker, version, Radio, Space, Row, Col } from "antd";
+import {
+  Button,
+  DatePicker,
+  version,
+  Radio,
+  Space,
+  Row,
+  Col,
+  Alert,
+} from "antd";
 import styles from "../styles/Survey.module.css";
 import { getSurveyService } from "../services/services";
 import HeadSurvey from "../components/HeadSurvey";
 import Questions from "../components/Questions";
 import Answers from "../components/Answers";
 import { clearTimer, deleteTimer, getDeadTime } from "../utils/timer";
+import { ethers } from "ethers";
 
 const Survey = () => {
   const RefTimer = useRef(null);
@@ -18,6 +28,51 @@ const Survey = () => {
   const [timeId, setTimeId] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [startedSurvey, setStartedSurvey] = useState(false);
+  const [message, setMessage] = useState();
+  const [currentAccount, setCurrentAccount] = useState("");
+
+  const addressContract = "";
+
+  const contractABI = "";
+
+  useEffect(() => {
+    setTimeout(() => {
+      setMessage();
+    }, 4000);
+  }, [message]);
+
+  const checkIfWalletIsConnected = (setMessage) => {
+    try {
+      const { ethereum } = window;
+
+      if (!!ethereum) {
+        return false;
+      } else {
+        return true;
+      }
+    } catch (error) {
+      setMessage(error);
+    }
+  };
+
+  const checkIfExistsAnAuthorizedAccount = async () => {
+    try {
+      const { ethereum } = window;
+
+      const accounts = await ethereum.request({ method: "eth_accounts" });
+
+      if (accounts.length !== 0) {
+        const account = accounts[0];
+        setCurrentAccount(account);
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      setMessage(error.message);
+      return false;
+    }
+  };
 
   const getSurvey = async () => {
     const survey = await getSurveyService();
@@ -27,6 +82,26 @@ const Survey = () => {
   useEffect(() => {
     getSurvey();
   }, []);
+
+  useEffect(() => {
+    checkIfExistConnectedWalletAndAthorizedAccount();
+  }, []);
+
+  const checkIfExistConnectedWalletAndAthorizedAccount = async () => {
+    if (checkIfWalletIsConnected()) {
+      setMessage("Make sure you have metamask");
+    } else {
+      if (await checkIfExistsAnAuthorizedAccount()) {
+        console.log(
+          "checkIfExistsAnAuthorizedAccount",
+          checkIfExistsAnAuthorizedAccount()
+        );
+        getBalanceToken();
+      } else {
+        setMessage("Not authorized account found");
+      }
+    }
+  };
 
   const beginSurvey = () => {
     setAnswers([]);
@@ -87,18 +162,50 @@ const Survey = () => {
     RefOption.current = e.target.value;
   };
 
-  const submitSurvey = () => {
+  const submit = () => {
     setAnswers([]);
+    if (currentAccount) {
+      console.log("submit survey to contract");
+    } else {
+      setMessage("Not authorized account found");
+    }
+  };
+
+  const getBalanceToken = () => {
+    console.log("get balance");
+  };
+
+  const connectWallet = async () => {
+    try {
+      const { ethereum } = window;
+
+      if (!ethereum) {
+        setMessage("Get Metamask!");
+        return;
+      }
+      const accounts = await ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      if (!accounts) {
+        setMessage("You need to connect and account in Metamask!");
+      } else {
+        setCurrentAccount(accounts[0]);
+      }
+    } catch (error) {
+      setMessage(error);
+    }
   };
 
   return (
     <div className={styles.App}>
       {survey && (
         <>
+          {message && <Alert message={message} banner />}
           <HeadSurvey
             survey={survey}
             startedSurvey={startedSurvey}
             beginSurvey={beginSurvey}
+            connectWallet={connectWallet}
           />
           <Questions
             survey={survey}
@@ -112,7 +219,7 @@ const Survey = () => {
             <Row justify="center" gutter={[16, 16]}>
               <Col xs={10} sm={10} md={10} lg={8} xl={10}>
                 <Button
-                  onClick={submitSurvey}
+                  onClick={submit}
                   type="primary"
                   style={{ marginLeft: 8 }}
                 >
