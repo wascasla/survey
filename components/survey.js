@@ -35,6 +35,27 @@ const Survey = () => {
     }, 4000);
   }, [message]);
 
+  const getConnectedToRopsten = async () => {
+    try {
+      const { ethereum } = window;
+      if (ethereum){
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const network = await provider.getNetwork();
+        if(network.name !== "ropsten") {
+          return false
+        } else {
+          return true;
+        }
+
+      } else {
+        setMessage("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      setMessage(error.message);
+    }
+
+  }
+
   const getTotalQuiz = async () => {
     try {
       const { ethereum } = window;
@@ -87,7 +108,10 @@ const Survey = () => {
   };
 
   useEffect(() => {
-    getTotalQuiz();
+    if (currentAccount) {
+
+      getTotalQuiz();
+    }
   }, [currentAccount]);
 
   useEffect(() => {
@@ -97,11 +121,20 @@ const Survey = () => {
   const checkIfExistConnectedWalletAndAthorizedAccount = async () => {
     if (checkIfWalletIsConnected()) {
       setMessage("Make sure you have metamask");
+      return false;
     } else {
-      if (await checkIfExistsAnAuthorizedAccount()) {
-        getTotalQuiz();
+      let check = await getConnectedToRopsten();
+      if (check) {
+        let checkAuto = await checkIfExistsAnAuthorizedAccount();
+        if (checkAuto) {
+          return true;
+        } else {
+          setMessage("Not authorized account found");
+          return false;
+        }
       } else {
-        setMessage("Not authorized account found");
+        setMessage("You need to connect to Ropsten");
+        return false;
       }
     }
   };
@@ -166,7 +199,9 @@ const Survey = () => {
     let surveyId = 1;
     let answers = [1, 2, 3];
 
-    if (currentAccount) {
+    const check = await checkIfExistConnectedWalletAndAthorizedAccount();
+
+    if (currentAccount && check) {
       try {
         const { ethereum } = window;
 
@@ -181,7 +216,7 @@ const Survey = () => {
           await waveTxn.wait();
           setLoadingTxn(false);
 
-          getTotalQuiz();
+          await getTotalQuiz();
           setAnswers([]);
         } else {
           setMessage("Ethereum object doesn't exist!");
@@ -191,7 +226,7 @@ const Survey = () => {
         setLoadingTxn(false);
       }
     } else {
-      setMessage("Not authorized account found");
+      setMessage("Not authorized account found, please connect to a Ropsten Network");
       setLoadingTxn(false);
     }
   };
@@ -241,7 +276,7 @@ const Survey = () => {
           {answers.length > 0 && !startedSurvey && currentAccount && (
             <Row justify="center" className={styles.btnSubmit} gutter={[16, 16]}>
               <Col xs={10} sm={10} md={10} lg={8} xl={10}>
-                <Button loading={loadingTxn} onClick={submit} type="primary" style={{ marginLeft: 8 }}>
+                <Button loading={loadingTxn} onClick={submit} type="primary">
                   Submit
                 </Button>
               </Col>
