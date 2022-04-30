@@ -1,9 +1,10 @@
-import { Button, Col, Image, Row } from "antd";
 import React from "react";
+import { Button, Col, Image, Row } from "antd";
+import styles from "../styles/HeadSurvey.module.css"
 
 const HeadSurvey = ({ survey, startedSurvey, beginSurvey, connectWallet }) => {
   return (
-    <>
+    <div className={styles.head}> 
       <Row justify="center" gutter={[16, 16]}>
         <Col xs={18} sm={10} md={10} lg={8} xl={10}>
           <h2>{`Survey: ${survey.title} `}</h2>
@@ -36,7 +37,7 @@ const HeadSurvey = ({ survey, startedSurvey, beginSurvey, connectWallet }) => {
           </Button>
         </Col>
       </Row>
-    </>
+    </div>
   );
 };
 

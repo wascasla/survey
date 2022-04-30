@@ -1,28 +1,19 @@
 import React from "react";
 import { useState, useEffect, useRef } from "react";
 import "antd/dist/antd.css";
-import {
-  Button,
-  DatePicker,
-  version,
-  Radio,
-  Space,
-  Row,
-  Col,
-  Alert,
-} from "antd";
+import { Button, Row, Col, Alert } from "antd";
 import styles from "../styles/Survey.module.css";
-import { getSurveyService } from "../services/services";
-import HeadSurvey from "../components/HeadSurvey";
-import Questions from "../components/Questions";
-import Answers from "../components/Answers";
+import HeadSurvey from "./HeadSurvey";
+import Questions from "./Questions";
+import Answers from "./Answers";
 import { clearTimer, deleteTimer, getDeadTime } from "../utils/timer";
 import { ethers } from "ethers";
+import surveyJson from "../services/survey-sample.json";
+import abi from "../utils/survey-abi.json";
 
 const Survey = () => {
   const RefTimer = useRef(null);
   const RefOption = useRef("");
-  const [survey, setSurvey] = useState();
   const [numberQuestion, setNumberQuestion] = useState("");
   const [timer, setTimer] = useState("00");
   const [timeId, setTimeId] = useState(null);
@@ -30,16 +21,37 @@ const Survey = () => {
   const [startedSurvey, setStartedSurvey] = useState(false);
   const [message, setMessage] = useState();
   const [currentAccount, setCurrentAccount] = useState("");
+  const [totalQuiz, setTotalQuiz] = useState(0);
+  const [loadingTxn, setLoadingTxn] = useState(false);
 
-  const addressContract = "";
+  const survey = surveyJson;
+  const contractAddress = "0x74F0B668Ea3053052DEAa5Eedd1815f579f0Ee03";
 
-  const contractABI = "";
+  const contractABI = abi;
 
   useEffect(() => {
     setTimeout(() => {
       setMessage();
     }, 4000);
   }, [message]);
+
+  const getTotalQuiz = async () => {
+    try {
+      const { ethereum } = window;
+
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const surveyContract = new ethers.Contract(contractAddress, contractABI, signer);
+        let count = await surveyContract.balanceOf(currentAccount);
+        setTotalQuiz(ethers.utils.formatEther(count));
+      } else {
+        setMessage("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
 
   const checkIfWalletIsConnected = (setMessage) => {
     try {
@@ -74,14 +86,9 @@ const Survey = () => {
     }
   };
 
-  const getSurvey = async () => {
-    const survey = await getSurveyService();
-    setSurvey(survey);
-  };
-
   useEffect(() => {
-    getSurvey();
-  }, []);
+    getTotalQuiz();
+  }, [currentAccount]);
 
   useEffect(() => {
     checkIfExistConnectedWalletAndAthorizedAccount();
@@ -92,11 +99,7 @@ const Survey = () => {
       setMessage("Make sure you have metamask");
     } else {
       if (await checkIfExistsAnAuthorizedAccount()) {
-        console.log(
-          "checkIfExistsAnAuthorizedAccount",
-          checkIfExistsAnAuthorizedAccount()
-        );
-        getBalanceToken();
+        getTotalQuiz();
       } else {
         setMessage("Not authorized account found");
       }
@@ -144,10 +147,7 @@ const Survey = () => {
             RefTimer.current,
             setTimer
           );
-          const itemOfTimer = setTimeout(
-            nextQuestion,
-            survey?.questions[numberQuestion]?.lifetimeSeconds * 1000
-          );
+          const itemOfTimer = setTimeout(nextQuestion, survey?.questions[numberQuestion]?.lifetimeSeconds * 1000);
           setTimeId(itemOfTimer);
         }
       }
@@ -162,17 +162,38 @@ const Survey = () => {
     RefOption.current = e.target.value;
   };
 
-  const submit = () => {
-    setAnswers([]);
+  const submit = async () => {
+    let surveyId = 1;
+    let answers = [1, 2, 3];
+
     if (currentAccount) {
-      console.log("submit survey to contract");
+      try {
+        const { ethereum } = window;
+
+        if (ethereum) {
+          const provider = new ethers.providers.Web3Provider(ethereum);
+          const signer = provider.getSigner();
+          const surveyContract = new ethers.Contract(contractAddress, contractABI, signer);
+
+          setLoadingTxn(true);
+          const waveTxn = await surveyContract.submit(surveyId, answers);
+
+          await waveTxn.wait();
+          setLoadingTxn(false);
+
+          getTotalQuiz();
+          setAnswers([]);
+        } else {
+          setMessage("Ethereum object doesn't exist!");
+        }
+      } catch (error) {
+        setMessage(error.message);
+        setLoadingTxn(false);
+      }
     } else {
       setMessage("Not authorized account found");
+      setLoadingTxn(false);
     }
-  };
-
-  const getBalanceToken = () => {
-    console.log("get balance");
   };
 
   const connectWallet = async () => {
@@ -207,6 +228,7 @@ const Survey = () => {
             beginSurvey={beginSurvey}
             connectWallet={connectWallet}
           />
+          {currentAccount && <h2 className={styles.balance}>Balance QUIZ: {totalQuiz}</h2>}
           <Questions
             survey={survey}
             numberQuestion={numberQuestion}
@@ -215,14 +237,11 @@ const Survey = () => {
             optionSelected={RefOption.current}
           />
           <Answers answers={answers} startedSurvey={startedSurvey} />
-          {answers.length > 0 && !startedSurvey && (
-            <Row justify="center" gutter={[16, 16]}>
+
+          {answers.length > 0 && !startedSurvey && currentAccount && (
+            <Row justify="center" className={styles.btnSubmit} gutter={[16, 16]}>
               <Col xs={10} sm={10} md={10} lg={8} xl={10}>
-                <Button
-                  onClick={submit}
-                  type="primary"
-                  style={{ marginLeft: 8 }}
-                >
+                <Button loading={loadingTxn} onClick={submit} type="primary" style={{ marginLeft: 8 }}>
                   Submit
                 </Button>
               </Col>
