@@ -1,3 +1,5 @@
+This is a dapp with some example survey, when the survey is submitted you get some tokens like a reward for did the survey
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
